@@ -36,6 +36,20 @@ aws elb configure-health-check --load-balancer-name ITMO544-MP1-LoadBalancer --h
 echo -e "\nWaiting additional 3 minutes (180 seconds) before opening the ELB in a web browser"
 for i in {0..180};do echo -ne '.';sleep 1;done
 
+
+# SNS Cloud Metric Alarm
+
+SNSCloudMetric=CloudMetricTopic
+
+topicARN=(`aws sns create-topic --name SNSCloudMetricTopic`)
+aws sns set-topic-attributes --topic-arn $topicARN --attribute-name DisplayName --attribute-value SNSCloudMetricTopic
+
+
+
+aws sns subscribe --topic-arn $topicARN --protocol email --notification-endpoint ashaik4@hawk.iit.edu
+
+
+
 #creating autoscaling
 echo "\nCreating auto scaling\n"
 
