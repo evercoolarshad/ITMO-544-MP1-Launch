@@ -39,12 +39,8 @@ for i in {0..180};do echo -ne '.';sleep 1;done
 
 # SNS Cloud Metric Alarm
 
-SNSCloudMetric=CloudMetricTopic
-
-topicARN=(`aws sns create-topic --name SNSCloudMetricTopic`)
-aws sns set-topic-attributes --topic-arn $topicARN --attribute-name DisplayName --attribute-value SNSCloudMetricTopic
-
-
+topicARN=(`aws sns create-topic --name SNSCloudMetric`)
+aws sns set-topic-attributes --topic-arn $topicARN --attribute-name DisplayName --attribute-value SNSCloudMetric
 
 aws sns subscribe --topic-arn $topicARN --protocol email --notification-endpoint ashaik4@hawk.iit.edu
 
@@ -53,14 +49,15 @@ aws sns subscribe --topic-arn $topicARN --protocol email --notification-endpoint
 #creating autoscaling
 echo "\nCreating auto scaling\n"
 
-aws autoscaling create-launch-configuration --launch-configuration-name ITMO544-LAUNCH-CONFIG --image-id $1 --key-name $4 --security-groups $5 --instance-type $3 --user-data file:///home/controller/Desktop/CloudMP1/MP1-git/install-webserver.sh --iam-instance-profile $7
+aws autoscaling create-launch-configuration --launch-configuration-name ITMO544-LAUNCH-CONFIG --image-id $1 --key-name $4 --security-groups $5 --instance-type $3 --user-data file://../ITMO544_Environment_Setup/install-webserver-mp1.sh --iam-instance-profile $7
 
 aws autoscaling create-auto-scaling-group --auto-scaling-group-name itmo-544-extended-auto-scaling-group-2 --launch-configuration-name ITMO544-LAUNCH-CONFIG --load-balancer-names ITMO544-MP1-LoadBalancer --health-check-type ELB --min-size 1 --max-size 3 --desired-capacity 2 --default-cooldown 600 --health-check-grace-period 120 --vpc-zone-identifier $6
 
+
 # Making a cloudwatch metric over 30 and under 10
-aws cloudwatch put-metric-alarm --alarm-name cpugreaterthan30 --alarm-description "Alarm when CPU exceeds 30 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 30 --comparison-operator GreaterThanOrEqualToThreshold  --dimensions Name=itmo-544-extended-auto-scaling-group-2,Value=itmo-544-extended-auto-scaling-group-2 --evaluation-periods 2 --alarm-actions arn:aws:sns:us-east-1:111122223333:MyTopic --unit Percent
+aws cloudwatch put-metric-alarm --alarm-name cpugreaterthan30 --alarm-description "Alarm when CPU exceeds 30 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 30 --comparison-operator GreaterThanOrEqualToThreshold  --dimensions Name=itmo-544-extended-auto-scaling-group-2,Value=itmo-544-extended-auto-scaling-group-2 --evaluation-periods 2 --alarm-actions $topicARN --unit Percent
 echo "cloud watch metric executed"
-aws cloudwatch put-metric-alarm --alarm-name cpulessthan10 --alarm-description "Alarm when CPU is less than 10 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 10 --comparison-operator LessThanOrEqualToThreshold --dimensions Name=itmo-544-extended-auto-scaling-group-2,Value=itmo-544-extended-auto-scaling-group-2 --evaluation-periods 2 --alarm-actions arn:aws:sns:us-east-1:111122223333:MyTopic --unit Percent
+aws cloudwatch put-metric-alarm --alarm-name cpulessthan10 --alarm-description "Alarm when CPU is less than 10 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 10 --comparison-operator LessThanOrEqualToThreshold --dimensions Name=itmo-544-extended-auto-scaling-group-2,Value=itmo-544-extended-auto-scaling-group-2 --evaluation-periods 2 --alarm-actions $topicARN --unit Percent
 #./launch-rds.sh
 #Creating database subnet group
 aws rds create-db-subnet-group --db-subnet-group-name ITMO544-mp1-subnet-group --db-subnet-group-description "subnet group for mp1" --subnet-ids subnet-82a25ebf subnet-6b4d6932
@@ -68,14 +65,14 @@ aws rds create-db-subnet-group --db-subnet-group-name ITMO544-mp1-subnet-group -
 #Creating database instance 
 aws rds create-db-instance --db-name customerrecords --db-instance-identifier mp1-db --db-instance-class db.t1.micro --engine MySQL --master-username controller --master-user-password letmein888 --allocated-storage 5 --db-subnet-group-name ITMO544-mp1-subnet-group --publicly-accessible
 
-
+echo "Please wait until the database instance is available. This might take a lot of time."
 aws rds wait db-instance-available --db-instance-identifier mp1-db
 
 
 #Creating a read replica
-sudo aws rds create-db-instance-read-replica --db-instance-identifier mp1-db-read --source-db-instance-identifier mp1-db --publicly-accessible
+aws rds create-db-instance-read-replica --db-instance-identifier mp1-db-read --source-db-instance-identifier mp1-db --publicly-accessible
 
-sudo php ../ITMO_Application_Setup/setup.php
+#sudo php ../ITMO_Application_Setup/setup.php
 
 echo "All done"
 
