@@ -1,5 +1,5 @@
 #!/bin/bash
-./cleanup.sh
+#./cleanup.sh
 
 
 declare -a  instance_array 
@@ -13,7 +13,7 @@ declare -a  instance_array
 
 #example: ./launch.sh ami-d05e75b8 3 t2.micro ITMO544-Key sg-10ffe877 subnet-c5e4ca9c phpdeveloperRole
 
-mapfile -t instance_array < <(aws ec2 run-instances --image-id $1 --count $2 --instance-type $3 --key-name $4 --security-group-ids $5 --subnet-id $6 --associate-public-ip-address --iam-instance-profile Name=$7 --user-data file:///home/controller/Desktop/CloudMP1/MP1-git/install-webserver.sh --output table |grep InstanceId |sed "s/|//g"|tr -d ' '|sed "s/InstanceId//g")
+mapfile -t instance_array < <(aws ec2 run-instances --image-id $1 --count $2 --instance-type $3 --key-name $4 --security-group-ids $5 --subnet-id $6 --associate-public-ip-address --iam-instance-profile Name=$7 --user-data file://../ITMO544_Environment_Setup/install-webserver-mp1.sh --output table |grep InstanceId |sed "s/|//g"|tr -d ' '|sed "s/InstanceId//g")
 
 echo ${instance_array[@]}
 
@@ -55,7 +55,7 @@ aws autoscaling create-auto-scaling-group --auto-scaling-group-name itmo-544-ext
 
 
 # Making a cloudwatch metric over 30 and under 10
-aws cloudwatch put-metric-alarm --alarm-name cpugreaterthan30 --alarm-description "Alarm when CPU exceeds 30 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 30 --comparison-operator GreaterThanOrEqualToThreshold  --dimensions Name=itmo-544-extended-auto-scaling-group-2,Value=itmo-544-extended-auto-scaling-group-2 --evaluation-periods 2 --alarm-actions $topicARN --unit Percent
+aws cloudwatch put-metric-alarm --alarm-name cpugreaterthan30 --alarm-description "Alarm when CPU exceeds 30 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 30 --comparison-operator GreaterThanOrEqualToThreshold --dimensions Name=itmo-544-extended-auto-scaling-group-2,Value=itmo-544-extended-auto-scaling-group-2 --evaluation-periods 2 --alarm-actions $topicARN --unit Percent
 echo "cloud watch metric executed"
 aws cloudwatch put-metric-alarm --alarm-name cpulessthan10 --alarm-description "Alarm when CPU is less than 10 percent" --metric-name CPUUtilization --namespace AWS/EC2 --statistic Average --period 300 --threshold 10 --comparison-operator LessThanOrEqualToThreshold --dimensions Name=itmo-544-extended-auto-scaling-group-2,Value=itmo-544-extended-auto-scaling-group-2 --evaluation-periods 2 --alarm-actions $topicARN --unit Percent
 #./launch-rds.sh
@@ -73,6 +73,7 @@ aws rds wait db-instance-available --db-instance-identifier mp1-db
 aws rds create-db-instance-read-replica --db-instance-identifier mp1-db-read --source-db-instance-identifier mp1-db --publicly-accessible
 
 #sudo php ../ITMO_Application_Setup/setup.php
+#added setup.php execution in the environment script
 
 echo "All done"
 
